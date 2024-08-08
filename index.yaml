@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  kube-dns-manager:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2024-08-08T15:17:03.62813365Z"
+    description: Kubernetes DNS Manager
+    digest: 7d9e5f0fffcf7c64eac859e579f35dc5cd7d506ff55e871aaea2f0a5b9cf9073
+    name: kube-dns-manager
+    type: application
+    urls:
+    - https://github.com/xzzpig/kube-dns-manager/releases/download/kube-dns-manager-0.1.0/kube-dns-manager-0.1.0.tgz
+    version: 0.1.0
+generated: "2024-08-08T15:17:03.628143228Z"
