@@ -1,0 +1,13 @@
+apiVersion: dns.xzzpig.com/v1
+kind: ClusterGenerator
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-dns-manager
+    app.kubernetes.io/managed-by: kustomize
+  name: clustergenerator-sample
+spec:
+  resourceKind: Ingress
+  selector:
+    matchLabels:
+      test: xxx
+  templateRef: clustertemplate-sample

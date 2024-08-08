@@ -1,0 +1,11 @@
+apiVersion: dns.xzzpig.com/v1
+kind: Record
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-dns-manager
+    app.kubernetes.io/managed-by: kustomize
+  name: record-sample
+spec:
+  name: test.sample.com
+  type: A
+  value: "127.0.0.1"

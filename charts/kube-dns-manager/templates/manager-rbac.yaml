@@ -1,0 +1,229 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kube-dns-manager.fullname" . }}-manager-role
+  labels:
+  {{- include "kube-dns-manager.labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  - namespaces
+  - nodes
+  - pods
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustergenerators
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustergenerators/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustergenerators/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clusterproviders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clusterproviders/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clusterproviders/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustertemplates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - providers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - providers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - providers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - records
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - records/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - records/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - resourcewatchers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - resourcewatchers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - resourcewatchers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - templates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kube-dns-manager.fullname" . }}-manager-rolebinding
+  labels:
+  {{- include "kube-dns-manager.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: '{{ include "kube-dns-manager.fullname" . }}-manager-role'
+subjects:
+- kind: ServiceAccount
+  name: '{{ include "kube-dns-manager.fullname" . }}-controller-manager'
+  namespace: '{{ .Release.Namespace }}'

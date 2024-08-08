@@ -1,0 +1,25 @@
+apiVersion: dns.xzzpig.com/v1
+kind: ClusterTemplate
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-dns-manager
+    app.kubernetes.io/managed-by: kustomize
+  name: clustertemplate-sample
+spec:
+  template: |
+    {{- $Ingress := .Ingress -}}
+    {{ range $RIdx,$Rule := $Ingress.Spec.Rules }}
+    {{- $Service := $Ingress.Service $RIdx 0 }}
+    {{- $Endpoints := index $Service.Endpoints 0 }}
+    {{- $Pod := index $Endpoints.Pods 0 }}
+    - metadata:
+        labels: 
+          {{- $Ingress.Labels | toYaml | trim | nindent 6}}
+        name: {{$Rule.Host | replace "." "-" | kebabcase}}
+      spec:
+        name: {{$Rule.Host}}
+        type: A
+        value: {{ index $Pod.Node.Annotations "alpha.kubernetes.io/provided-node-ip" }}
+        extra:
+          test: cluster-template-1
+    {{- end }}

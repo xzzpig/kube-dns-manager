@@ -1,0 +1,14 @@
+apiVersion: dns.xzzpig.com/v1
+kind: Provider
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-dns-manager
+    app.kubernetes.io/managed-by: kustomize
+  name: provider-sample
+spec:
+  type: ALIYUN
+  selector:
+    domain: sample.com
+  aliyun:
+    accessKeyId: your-access-key-id
+    accessKeySecret: your-access-key-secret

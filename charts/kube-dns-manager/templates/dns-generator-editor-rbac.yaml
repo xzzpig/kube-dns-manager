@@ -1,0 +1,25 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kube-dns-manager.fullname" . }}-dns-generator-editor-role
+  labels:
+  {{- include "kube-dns-manager.labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators/status
+  verbs:
+  - get

@@ -1,0 +1,1713 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+    control-plane: controller-manager
+  name: kube-dns-manager-system
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.15.0
+  name: clustergenerators.dns.xzzpig.com
+spec:
+  group: dns.xzzpig.com
+  names:
+    kind: ClusterGenerator
+    listKind: ClusterGeneratorList
+    plural: clustergenerators
+    singular: clustergenerator
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.resourceKind
+      name: Kind
+      type: boolean
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: ClusterGenerator is the Schema for the clustergenerators API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: GeneratorSpec defines the desired state of Generator
+            properties:
+              resourceKind:
+                enum:
+                - Ingress
+                type: string
+              selector:
+                description: |-
+                  A label selector is a label query over a set of resources. The result of matchLabels and
+                  matchExpressions are ANDed. An empty label selector matches all objects. A null
+                  label selector matches no objects.
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: |-
+                        A label selector requirement is a selector that contains values, a key, and an operator that
+                        relates the key and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: |-
+                            operator represents a key's relationship to a set of values.
+                            Valid operators are In, NotIn, Exists and DoesNotExist.
+                          type: string
+                        values:
+                          description: |-
+                            values is an array of string values. If the operator is In or NotIn,
+                            the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                            the values array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: atomic
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                      map is equivalent to an element of matchExpressions, whose key field is "key", the
+                      operator is "In", and the values array contains only "value". The requirements are ANDed.
+                    type: object
+                type: object
+                x-kubernetes-map-type: atomic
+              template:
+                description: GoTemplateString is a string that represents a Go template
+                type: string
+              templateRef:
+                type: string
+              watcherGenerateName:
+                type: string
+            required:
+            - resourceKind
+            type: object
+          status:
+            description: GeneratorStatus defines the observed state of Generator
+            properties:
+              appliedGeneration:
+                format: int64
+                type: integer
+              resources:
+                description: Resources watched by the generator
+                items:
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.15.0
+  name: clusterproviders.dns.xzzpig.com
+spec:
+  group: dns.xzzpig.com
+  names:
+    kind: ClusterProvider
+    listKind: ClusterProviderList
+    plural: clusterproviders
+    singular: clusterprovider
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.selector.domain
+      name: Host
+      type: string
+    - jsonPath: .spec.type
+      name: Type
+      type: string
+    - jsonPath: .status.ready
+      name: Ready
+      type: boolean
+    - jsonPath: .status.reason
+      name: Reason
+      priority: 1
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: ClusterProvider is the Schema for the clusterproviders API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ProviderSpec defines the desired state of Provider
+            properties:
+              aliyun:
+                properties:
+                  accessKeyId:
+                    type: string
+                  accessKeySecret:
+                    type: string
+                  domainName:
+                    description: If empty, spec.selector.domain will be used as domain
+                      name
+                    type: string
+                  endpoint:
+                    type: string
+                required:
+                - accessKeyId
+                - accessKeySecret
+                type: object
+              cloudflare:
+                properties:
+                  apiToken:
+                    type: string
+                  email:
+                    type: string
+                  key:
+                    type: string
+                  matchExistsRecord:
+                    description: When creating a Record, if the record already exists
+                      in CloudFlare, should it be associated with the existing record?
+                      Otherwise, an error will be reported
+                    type: boolean
+                  zoneName:
+                    description: If empty, spec.selector.domain will be used as zone
+                      name
+                    type: string
+                type: object
+              selector:
+                properties:
+                  domain:
+                    description: Records which has the same domain (suffix) will be
+                      managed by this provider, should not start with a dot (.)
+                    type: string
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: |-
+                        A label selector requirement is a selector that contains values, a key, and an operator that
+                        relates the key and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: |-
+                            operator represents a key's relationship to a set of values.
+                            Valid operators are In, NotIn, Exists and DoesNotExist.
+                          type: string
+                        values:
+                          description: |-
+                            values is an array of string values. If the operator is In or NotIn,
+                            the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                            the values array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: atomic
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                      map is equivalent to an element of matchExpressions, whose key field is "key", the
+                      operator is "In", and the values array contains only "value". The requirements are ANDed.
+                    type: object
+                type: object
+                x-kubernetes-map-type: atomic
+              type:
+                enum:
+                - ALIYUN
+                - CLOUDFLARE
+                type: string
+            required:
+            - type
+            type: object
+          status:
+            description: ProviderStatus defines the observed state of Provider
+            properties:
+              ready:
+                type: boolean
+              reason:
+                type: string
+            required:
+            - ready
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.15.0
+  name: clustertemplates.dns.xzzpig.com
+spec:
+  group: dns.xzzpig.com
+  names:
+    kind: ClusterTemplate
+    listKind: ClusterTemplateList
+    plural: clustertemplates
+    singular: clustertemplate
+  scope: Cluster
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: ClusterTemplate is the Schema for the clustertemplates API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: TemplateSpec defines the desired state of Template
+            properties:
+              template:
+                description: GoTemplateString is a string that represents a Go template
+                type: string
+            required:
+            - template
+            type: object
+          status:
+            description: TemplateStatus defines the observed state of Template
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.15.0
+  name: generators.dns.xzzpig.com
+spec:
+  group: dns.xzzpig.com
+  names:
+    kind: Generator
+    listKind: GeneratorList
+    plural: generators
+    singular: generator
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.resourceKind
+      name: Type
+      type: boolean
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: Generator is the Schema for the generators API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: GeneratorSpec defines the desired state of Generator
+            properties:
+              resourceKind:
+                enum:
+                - Ingress
+                type: string
+              selector:
+                description: |-
+                  A label selector is a label query over a set of resources. The result of matchLabels and
+                  matchExpressions are ANDed. An empty label selector matches all objects. A null
+                  label selector matches no objects.
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: |-
+                        A label selector requirement is a selector that contains values, a key, and an operator that
+                        relates the key and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: |-
+                            operator represents a key's relationship to a set of values.
+                            Valid operators are In, NotIn, Exists and DoesNotExist.
+                          type: string
+                        values:
+                          description: |-
+                            values is an array of string values. If the operator is In or NotIn,
+                            the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                            the values array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: atomic
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                      map is equivalent to an element of matchExpressions, whose key field is "key", the
+                      operator is "In", and the values array contains only "value". The requirements are ANDed.
+                    type: object
+                type: object
+                x-kubernetes-map-type: atomic
+              template:
+                description: GoTemplateString is a string that represents a Go template
+                type: string
+              templateRef:
+                type: string
+              watcherGenerateName:
+                type: string
+            required:
+            - resourceKind
+            type: object
+          status:
+            description: GeneratorStatus defines the observed state of Generator
+            properties:
+              appliedGeneration:
+                format: int64
+                type: integer
+              resources:
+                description: Resources watched by the generator
+                items:
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.15.0
+  name: providers.dns.xzzpig.com
+spec:
+  group: dns.xzzpig.com
+  names:
+    kind: Provider
+    listKind: ProviderList
+    plural: providers
+    singular: provider
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.selector.domain
+      name: Host
+      type: string
+    - jsonPath: .spec.type
+      name: Type
+      type: string
+    - jsonPath: .status.ready
+      name: Ready
+      type: boolean
+    - jsonPath: .status.reason
+      name: Reason
+      priority: 1
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: Provider is the Schema for the providers API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ProviderSpec defines the desired state of Provider
+            properties:
+              aliyun:
+                properties:
+                  accessKeyId:
+                    type: string
+                  accessKeySecret:
+                    type: string
+                  domainName:
+                    description: If empty, spec.selector.domain will be used as domain
+                      name
+                    type: string
+                  endpoint:
+                    type: string
+                required:
+                - accessKeyId
+                - accessKeySecret
+                type: object
+              cloudflare:
+                properties:
+                  apiToken:
+                    type: string
+                  email:
+                    type: string
+                  key:
+                    type: string
+                  matchExistsRecord:
+                    description: When creating a Record, if the record already exists
+                      in CloudFlare, should it be associated with the existing record?
+                      Otherwise, an error will be reported
+                    type: boolean
+                  zoneName:
+                    description: If empty, spec.selector.domain will be used as zone
+                      name
+                    type: string
+                type: object
+              selector:
+                properties:
+                  domain:
+                    description: Records which has the same domain (suffix) will be
+                      managed by this provider, should not start with a dot (.)
+                    type: string
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: |-
+                        A label selector requirement is a selector that contains values, a key, and an operator that
+                        relates the key and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: |-
+                            operator represents a key's relationship to a set of values.
+                            Valid operators are In, NotIn, Exists and DoesNotExist.
+                          type: string
+                        values:
+                          description: |-
+                            values is an array of string values. If the operator is In or NotIn,
+                            the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                            the values array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: atomic
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                      map is equivalent to an element of matchExpressions, whose key field is "key", the
+                      operator is "In", and the values array contains only "value". The requirements are ANDed.
+                    type: object
+                type: object
+                x-kubernetes-map-type: atomic
+              type:
+                enum:
+                - ALIYUN
+                - CLOUDFLARE
+                type: string
+            required:
+            - type
+            type: object
+          status:
+            description: ProviderStatus defines the observed state of Provider
+            properties:
+              ready:
+                type: boolean
+              reason:
+                type: string
+            required:
+            - ready
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.15.0
+  name: records.dns.xzzpig.com
+spec:
+  group: dns.xzzpig.com
+  names:
+    kind: Record
+    listKind: RecordList
+    plural: records
+    singular: record
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.name
+      name: Host
+      type: string
+    - jsonPath: .spec.type
+      name: Type
+      type: string
+    - jsonPath: .spec.value
+      name: Value
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: Record is the Schema for the records API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: RecordSpec defines the desired state of Record
+            properties:
+              extra:
+                additionalProperties:
+                  type: string
+                type: object
+              name:
+                type: string
+              ttl:
+                type: integer
+              type:
+                enum:
+                - A
+                - CNAME
+                - TXT
+                - MX
+                - SRV
+                - AAAA
+                - NS
+                - CAA
+                type: string
+              value:
+                type: string
+            required:
+            - name
+            - type
+            - value
+            type: object
+          status:
+            description: RecordStatus defines the observed state of Record
+            properties:
+              providers:
+                items:
+                  properties:
+                    message:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    recordID:
+                      type: string
+                  required:
+                  - name
+                  - recordID
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.15.0
+  name: resourcewatchers.dns.xzzpig.com
+spec:
+  group: dns.xzzpig.com
+  names:
+    kind: ResourceWatcher
+    listKind: ResourceWatcherList
+    plural: resourcewatchers
+    singular: resourcewatcher
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.resource.name
+      name: Resource
+      type: string
+    - jsonPath: .status.ready
+      name: Ready
+      type: boolean
+    - jsonPath: .status.reason
+      name: Reason
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: ResourceWatcher is the Schema for the resourcewatchers API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ResourceWatcherSpec defines the desired state of ResourceWatcher
+            properties:
+              resource:
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                required:
+                - name
+                type: object
+            required:
+            - resource
+            type: object
+          status:
+            description: ResourceWatcherStatus defines the observed state of ResourceWatcher
+            properties:
+              ready:
+                type: boolean
+              reason:
+                type: string
+              resources:
+                items:
+                  properties:
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                  required:
+                  - kind
+                  - name
+                  type: object
+                type: array
+            required:
+            - ready
+            - resources
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.15.0
+  name: templates.dns.xzzpig.com
+spec:
+  group: dns.xzzpig.com
+  names:
+    kind: Template
+    listKind: TemplateList
+    plural: templates
+    singular: template
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: Template is the Schema for the templates API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: TemplateSpec defines the desired state of Template
+            properties:
+              template:
+                description: GoTemplateString is a string that represents a Go template
+                type: string
+            required:
+            - template
+            type: object
+          status:
+            description: TemplateStatus defines the observed state of Template
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-controller-manager
+  namespace: kube-dns-manager-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-leader-election-role
+  namespace: kube-dns-manager-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-clustergenerator-editor-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustergenerators
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustergenerators/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-clustergenerator-viewer-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustergenerators
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustergenerators/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-clusterprovider-editor-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clusterproviders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clusterproviders/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-clusterprovider-viewer-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clusterproviders
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clusterproviders/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-clustertemplate-editor-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustertemplates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustertemplates/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-clustertemplate-viewer-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustertemplates
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustertemplates/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-generator-editor-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-generator-viewer-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-provider-editor-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - providers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - providers/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-provider-viewer-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - providers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - providers/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-record-editor-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - records
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - records/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-record-viewer-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - records
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - records/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-resourcewatcher-editor-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - resourcewatchers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - resourcewatchers/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-resourcewatcher-viewer-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - resourcewatchers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - resourcewatchers/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-template-editor-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - templates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - templates/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-dns-template-viewer-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - templates
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - templates/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-dns-manager-manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  - namespaces
+  - nodes
+  - pods
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustergenerators
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustergenerators/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustergenerators/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clusterproviders
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clusterproviders/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clusterproviders/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - clustertemplates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - providers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - providers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - providers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - records
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - records/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - records/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - resourcewatchers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - resourcewatchers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - resourcewatchers/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - templates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-dns-manager-metrics-auth-role
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-dns-manager-metrics-reader
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-leader-election-rolebinding
+  namespace: kube-dns-manager-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kube-dns-manager-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: kube-dns-manager-controller-manager
+  namespace: kube-dns-manager-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+  name: kube-dns-manager-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-dns-manager-manager-role
+subjects:
+- kind: ServiceAccount
+  name: kube-dns-manager-controller-manager
+  namespace: kube-dns-manager-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-dns-manager-metrics-auth-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-dns-manager-metrics-auth-role
+subjects:
+- kind: ServiceAccount
+  name: kube-dns-manager-controller-manager
+  namespace: kube-dns-manager-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+    control-plane: controller-manager
+  name: kube-dns-manager-controller-manager-metrics-service
+  namespace: kube-dns-manager-system
+spec:
+  ports:
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    control-plane: controller-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kube-dns-manager
+    control-plane: controller-manager
+  name: kube-dns-manager-controller-manager
+  namespace: kube-dns-manager-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: controller-manager
+    spec:
+      containers:
+      - args:
+        - --metrics-bind-address=:8443
+        - --leader-elect
+        - --health-probe-bind-address=:8081
+        command:
+        - /manager
+        image: ghcr.io/xzzpig/kube-dns-manager:0.1.0
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: kube-dns-manager-controller-manager
+      terminationGracePeriodSeconds: 10

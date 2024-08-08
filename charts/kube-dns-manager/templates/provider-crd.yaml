@@ -1,0 +1,168 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: providers.dns.xzzpig.com
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.15.0
+  labels:
+  {{- include "kube-dns-manager.labels" . | nindent 4 }}
+spec:
+  group: dns.xzzpig.com
+  names:
+    kind: Provider
+    listKind: ProviderList
+    plural: providers
+    singular: provider
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.selector.domain
+      name: Host
+      type: string
+    - jsonPath: .spec.type
+      name: Type
+      type: string
+    - jsonPath: .status.ready
+      name: Ready
+      type: boolean
+    - jsonPath: .status.reason
+      name: Reason
+      priority: 1
+      type: string
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: Provider is the Schema for the providers API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ProviderSpec defines the desired state of Provider
+            properties:
+              aliyun:
+                properties:
+                  accessKeyId:
+                    type: string
+                  accessKeySecret:
+                    type: string
+                  domainName:
+                    description: If empty, spec.selector.domain will be used as domain
+                      name
+                    type: string
+                  endpoint:
+                    type: string
+                required:
+                - accessKeyId
+                - accessKeySecret
+                type: object
+              cloudflare:
+                properties:
+                  apiToken:
+                    type: string
+                  email:
+                    type: string
+                  key:
+                    type: string
+                  matchExistsRecord:
+                    description: When creating a Record, if the record already exists
+                      in CloudFlare, should it be associated with the existing record?
+                      Otherwise, an error will be reported
+                    type: boolean
+                  zoneName:
+                    description: If empty, spec.selector.domain will be used as zone
+                      name
+                    type: string
+                type: object
+              selector:
+                properties:
+                  domain:
+                    description: Records which has the same domain (suffix) will be
+                      managed by this provider, should not start with a dot (.)
+                    type: string
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: |-
+                        A label selector requirement is a selector that contains values, a key, and an operator that
+                        relates the key and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: |-
+                            operator represents a key's relationship to a set of values.
+                            Valid operators are In, NotIn, Exists and DoesNotExist.
+                          type: string
+                        values:
+                          description: |-
+                            values is an array of string values. If the operator is In or NotIn,
+                            the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                            the values array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: atomic
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                      map is equivalent to an element of matchExpressions, whose key field is "key", the
+                      operator is "In", and the values array contains only "value". The requirements are ANDed.
+                    type: object
+                type: object
+                x-kubernetes-map-type: atomic
+              type:
+                enum:
+                - ALIYUN
+                - CLOUDFLARE
+                type: string
+            required:
+            - type
+            type: object
+          status:
+            description: ProviderStatus defines the observed state of Provider
+            properties:
+              ready:
+                type: boolean
+              reason:
+                type: string
+            required:
+            - ready
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

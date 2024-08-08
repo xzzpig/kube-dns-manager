@@ -1,0 +1,9 @@
+apiVersion: dns.xzzpig.com/v1
+kind: ResourceWatcher
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-dns-manager
+    app.kubernetes.io/managed-by: kustomize
+  name: resourcewatcher-sample
+spec:
+  # TODO(user): Add fields here

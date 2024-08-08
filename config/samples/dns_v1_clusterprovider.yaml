@@ -1,0 +1,15 @@
+apiVersion: dns.xzzpig.com/v1
+kind: ClusterProvider
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-dns-manager
+    app.kubernetes.io/managed-by: kustomize
+  name: clusterprovider-sample
+spec:
+  type: CLOUDFLARE
+  selector:
+    domain: sample.com
+    matchLabels:
+      test: xxx
+  cloudflare:
+    apiToken: your-api-token

@@ -1,0 +1,11 @@
+## Append samples of your project ##
+resources:
+- dns_v1_generator.yaml
+- dns_v1_resourcewatcher.yaml
+- dns_v1_template.yaml
+- dns_v1_record.yaml
+- dns_v1_provider.yaml
+- dns_v1_clusterprovider.yaml
+- dns_v1_clustertemplate.yaml
+- dns_v1_clustergenerator.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

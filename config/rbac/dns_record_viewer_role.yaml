@@ -1,0 +1,23 @@
+# permissions for end users to view records.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-dns-manager
+    app.kubernetes.io/managed-by: kustomize
+  name: dns-record-viewer-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - records
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - records/status
+  verbs:
+  - get

@@ -1,0 +1,23 @@
+# permissions for end users to view generators.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: kube-dns-manager
+    app.kubernetes.io/managed-by: kustomize
+  name: dns-generator-viewer-role
+rules:
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - dns.xzzpig.com
+  resources:
+  - generators/status
+  verbs:
+  - get
