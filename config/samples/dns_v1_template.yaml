@@ -8,18 +8,21 @@ metadata:
 spec:
   template: |
     {{- $Ingress := .Ingress -}}
-    {{ range $RIdx,$Rule := $Ingress.Spec.Rules }}
-    {{- $Service := $Ingress.Service $RIdx 0 }}
-    {{- $Endpoints := index $Service.Endpoints 0 }}
-    {{- $Pod := index $Endpoints.Pods 0 }}
+    {{- $Ns := .GetNamespace -}}
+    {{- if eq "true" (index $Ns.Labels "dns.xzzpig.com/public" | default "true") }}
+    {{- if eq "nginx" ( $Ingress.Spec.IngressClassName | unPtrStr ) }}
+    {{- range $RIdx,$Rule := $Ingress.Spec.Rules }}
     - metadata:
         labels: 
+          "dns.xzzpig.com/scope": public
           {{- $Ingress.Labels | toYaml | trim | nindent 6}}
-        name: {{$Rule.Host | replace "." "-" | kebabcase}}
+        name: public-{{$Rule.Host | replace "." "-" | kebabcase}}
       spec:
         name: {{$Rule.Host}}
-        type: A
-        value: {{ index $Pod.Node.Annotations "alpha.kubernetes.io/provided-node-ip" }}
+        type: CNAME
+        value: "sample.sample.com"
         extra:
-          test: 123
+          "dns.xzzpig.com/cloudflare/comment": "managed by kube-dns-manager"
+    {{- end }}
+    {{- end }}
     {{- end }}

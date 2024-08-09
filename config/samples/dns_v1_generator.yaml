@@ -8,6 +8,8 @@ metadata:
 spec:
   resourceKind: Ingress
   selector:
-    matchLabels:
-      test: aaa
-  templateRef: template-sample
+    matchExpressions:
+      - key: dns.xzzpig.com/no-public
+        operator: DoesNotExist
+  templateRef: clustertemplate-public
+  watcherGenerateName: watcher-public-

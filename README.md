@@ -1,100 +1,51 @@
 # kube-dns-manager
-// TODO(user): Add simple overview of use/purpose
+Manage DNS Record in kubernetes.
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+Features:
+- Generate DNS Record by kubernetes resources, eg. Ingress, Service, Node
+- Sync DNS Record to DNS Providers, eg. alidns, cloudflare
 
 ## Getting Started
-
-### Prerequisites
-- go version v1.22.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
-
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
-
+### Installation
+#### Helm
+1. Run the following command to add the chart repository first:
 ```sh
-make docker-build docker-push IMG=<some-registry>/kube-dns-manager:tag
+helm repo add kube-dns-manager https://xzzpig.github.io/kube-dns-manager/
+helm repo update
+```
+2. Install the chart:
+```sh
+helm install kube-dns-manager kube-dns-manager/kube-dns-manager --namespace kube-dns-manager --create-namespace
+```
+#### Bundles
+```sh
+kubectl apply -f https://raw.githubusercontent.com/xzzpig/kube-dns-manager/main/dist/install.yaml
 ```
 
-**NOTE:** This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
-
-**Install the CRDs into the cluster:**
-
+### Uninstall
+#### Helm
 ```sh
-make install
+helm uninstall kube-dns-manager --namespace kube-dns-manager
+```
+#### Bundles
+```sh
+kubectl delete -f https://raw.githubusercontent.com/xzzpig/kube-dns-manager/main/dist/install.yaml --wait
 ```
 
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
+### Model
+![Model](model.drawio.svg)
 
-```sh
-make deploy IMG=<some-registry>/kube-dns-manager:tag
-```
-
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
-
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
-
-```sh
-kubectl apply -k config/samples/
-```
-
->**NOTE**: Ensure that the samples has default values to test it out.
-
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
-
-```sh
-kubectl delete -k config/samples/
-```
-
-**Delete the APIs(CRDs) from the cluster:**
-
-```sh
-make uninstall
-```
-
-**UnDeploy the controller from the cluster:**
-
-```sh
-make undeploy
-```
-
-## Project Distribution
-
-Following are the steps to build the installer and distribute this project to users.
-
-1. Build the installer for the image built and published in the registry:
-
-```sh
-make build-installer IMG=<some-registry>/kube-dns-manager:tag
-```
-
-NOTE: The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without
-its dependencies.
-
-2. Using the installer
-
-Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project, i.e.:
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/kube-dns-manager/<tag or branch>/dist/install.yaml
-```
-
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
-**NOTE:** Run `make help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
+### Configure
+1. Create a 
+[Template](config/samples/dns_v1_clustertemplate.yaml)/[ClusterTemplate](config/samples/dns_v1_template.yaml). This sample template is used for Ingress, and is a `Record` template with 
+- label:`dns.xzzpig.com/scope: public`
+- domain: hosts in the Ingress
+- type: CNAME
+- value: sample.sample.com
+- extra: a comment if `Provider` is cloudflare
+2. Create a [Generator](config/samples/dns_v1_generator.yaml)/[ClusterGenerator](config/samples/dns_v1_clustergenerator.yaml) to generate DNS Record by kubernetes resources. This samele generator will match `public` Ingress and create a `ResourceWatcher` to watch the changes of the Ingress which is used in the `Template`(If other resources are used in the `Template`, they will also be watched by the `ResourceWatcher`). Then the `ResourceWatcher` will generate DNS `Record` via the `Template`.
+3. Create a [Provider](config/samples/dns_v1_provider.yaml)/[ClusterProvider](config/samples/dns_v1_clusterprovider.yaml). This samele provider will match any `Record` with label `dns.xzzpig.com/scope: public` and domain is `sample.com` and then sync to DNS Providers.
 
 ## License
 
