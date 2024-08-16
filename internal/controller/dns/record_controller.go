@@ -56,6 +56,7 @@ type RecordReconciler struct {
 // +kubebuilder:rbac:groups=dns.xzzpig.com,resources=records/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=dns.xzzpig.com,resources=records/finalizers,verbs=update
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups="batch",resources=jobs,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
