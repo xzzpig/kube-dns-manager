@@ -18,6 +18,7 @@ package dns
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,12 +35,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	dnsv1 "github.com/xzzpig/kube-dns-manager/api/dns/v1"
+	"github.com/xzzpig/kube-dns-manager/internal/controller/dns/provider"
 	corev1 "k8s.io/api/core/v1"
 )
 
 const (
 	TimeWaitProvider = time.Minute
 )
+
+var NewPayload = provider.NewPayload
 
 // RecordReconciler reconciles a Record object
 type RecordReconciler struct {
@@ -64,6 +68,7 @@ type RecordReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.18.4/pkg/reconcile
 func (r *RecordReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
+	ctx = context.WithValue(ctx, provider.CtxKeyClient, r.Client)
 
 	record := &dnsv1.Record{}
 	if err := r.Get(ctx, req.NamespacedName, record); err != nil {
@@ -115,32 +120,33 @@ func (r *RecordReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			continue
 		}
 
+		payload := NewPayload(providerStatus, &record.Spec)
 		if !record.DeletionTimestamp.IsZero() || !provider.GetDeletionTimestamp().IsZero() { // delete
 			if providerStatus.RecordID == "" { // already deleted or not yet created
-				providerStatus.Success("")
+				providerStatus.Success(providerStatus.RecordID, providerStatus.Data)
 				continue
 			}
-			if err := dnsProvider.Delete(ctx, providerStatus.RecordID); err != nil {
-				providerStatus.Error(err)
+			if err := dnsProvider.Delete(ctx, payload); err != nil {
+				providerStatus.Error(payload.Id, payload.Data, err)
 				r.Recorder.Eventf(record, corev1.EventTypeWarning, "Failed", "Failed to delete record by provider %s", providerStatus.NamespacedName.String())
 			} else {
-				providerStatus.Success("")
+				providerStatus.Success(payload.Id, payload.Data)
 				r.Recorder.Eventf(record, corev1.EventTypeNormal, "Deleted", "Record is deleted by provider %s", providerStatus.NamespacedName.String())
 			}
 		} else if providerStatus.RecordID == "" { // create
-			if id, err := dnsProvider.Create(ctx, &record.Spec); err != nil {
-				providerStatus.Error(err)
+			if err := dnsProvider.Create(ctx, payload); err != nil {
+				providerStatus.Error(payload.Id, payload.Data, err)
 				r.Recorder.Eventf(record, corev1.EventTypeWarning, "Failed", "Failed to create record by provider %s", providerStatus.NamespacedName.String())
 			} else {
-				providerStatus.Success(id)
+				providerStatus.Success(payload.Id, payload.Data)
 				r.Recorder.Eventf(record, corev1.EventTypeNormal, "Created", "Record is created by provider %s", providerStatus.NamespacedName.String())
 			}
 		} else { //update
-			if id, err := dnsProvider.Update(ctx, providerStatus.RecordID, &record.Spec); err != nil {
-				providerStatus.Error(err)
+			if err := dnsProvider.Update(ctx, payload); err != nil {
+				providerStatus.Error(payload.Id, payload.Data, err)
 				r.Recorder.Eventf(record, corev1.EventTypeWarning, "Failed", "Failed to update record by provider %s", providerStatus.NamespacedName.String())
 			} else {
-				providerStatus.Success(id)
+				providerStatus.Success(payload.Id, payload.Data)
 				r.Recorder.Eventf(record, corev1.EventTypeNormal, "Updated", "Record is updated by provider %s", providerStatus.NamespacedName.String())
 			}
 		}
@@ -154,7 +160,7 @@ func (r *RecordReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 		var provider dnsv1.ProviderObject
 		if err := r.getProvider(ctx, types.NamespacedName{Namespace: providerStatus.Namespace, Name: providerStatus.Name}, &provider); client.IgnoreNotFound(err) != nil {
-			providerStatus.Error(err)
+			providerStatus.Error(providerStatus.RecordID, providerStatus.Data, err)
 			continue
 		}
 		if providerStatus.RecordID != "" && provider != nil {
@@ -163,8 +169,9 @@ func (r *RecordReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				providerStatus.Message = "provider not ready"
 				continue
 			}
-			if err := dnsProvider.Delete(ctx, providerStatus.RecordID); err != nil {
-				providerStatus.Error(err)
+			payload := NewPayload(providerStatus, &record.Spec)
+			if err := dnsProvider.Delete(ctx, payload); err != nil {
+				providerStatus.Error(payload.Id, payload.Data, err)
 				r.Recorder.Eventf(record, corev1.EventTypeWarning, "Failed", "Failed to delete record by provider %s", providerStatus.NamespacedName.String())
 				continue
 			}
@@ -184,19 +191,20 @@ func (r *RecordReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		record.Status.Providers = newStatus
 	}
 
+	record.Status.AllReady = true
+	record.Status.Message = ""
+	for _, providerStatus := range record.Status.Providers {
+		if providerStatus.Message != "" {
+			record.Status.AllReady = false
+			record.Status.Message += providerStatus.Message + "\n"
+		}
+	}
+	record.Status.Message = strings.TrimSuffix(record.Status.Message, "\n")
 	if err := r.Status().Update(ctx, record); err != nil {
 		logger.Error(err, "failed to update record status")
 		r.Recorder.Event(record, corev1.EventTypeWarning, "Failed", "Failed to update record status")
 	}
-
-	allProvidersReady := true
-	for _, providerStatus := range record.Status.Providers {
-		if providerStatus.Message != "" {
-			allProvidersReady = false
-			break
-		}
-	}
-	if !allProvidersReady {
+	if !record.Status.AllReady {
 		return ctrl.Result{RequeueAfter: TimeWaitProvider}, nil
 	}
 

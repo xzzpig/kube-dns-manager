@@ -24,12 +24,26 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// +kubebuilder:validation:Enum=ALIYUN;CLOUDFLARE
+// +kubebuilder:validation:Enum=ALIYUN;CLOUDFLARE;JOB
 type ProviderType string
 
 const (
 	ProviderTypeAliyun     ProviderType = "ALIYUN"
 	ProviderTypeCloudflare ProviderType = "CLOUDFLARE"
+	ProviderTypeJob        ProviderType = "JOB"
+)
+
+// When to write back data to record's data field
+// OnCreate: When Job is created
+// OnComplete: After Job is completed
+// OnCompleteOrFailed: After Job is completed or failed
+// +kubebuilder:validation:Enum=OnCreate;OnComplete;OnCompleteOrFailed
+type DataUpdateStrategy string
+
+const (
+	DataUpdateStrategyOnCreate           DataUpdateStrategy = "OnCreate"
+	DataUpdateStratagyOnComplete         DataUpdateStrategy = "OnComplete"
+	DataUpdateStratagyOnCompleteOrFailed DataUpdateStrategy = "OnCompleteOrFailed"
 )
 
 type AliyunProviderConfig struct {
@@ -51,12 +65,24 @@ type CloudflareProviderConfig struct {
 	MatchExistsRecord bool `json:"matchExistsRecord,omitempty"`
 }
 
+type JobProviderConfig struct {
+	CreateJobTemplate GoTemplateString `json:"createJobTemplate"`
+	// If empty, createJobTemplate will be used
+	UpdateJobTemplate GoTemplateString `json:"updateJobTemplate,omitempty"`
+	// If empty, createJobTemplate will be used
+	DeleteJobTemplate GoTemplateString `json:"deleteJobTemplate,omitempty"`
+
+	DataTemplate       GoTemplateString   `json:"dataTemplate,omitempty"`
+	DataUpdateStrategy DataUpdateStrategy `json:"dataUpdateStrategy,omitempty"`
+}
+
 // ProviderSpec defines the desired state of Provider
 type ProviderSpec struct {
 	Type       ProviderType              `json:"type"`
 	Selector   ProviderSelector          `json:"selector,omitempty"`
 	Aliyun     *AliyunProviderConfig     `json:"aliyun,omitempty"`
 	Cloudflare *CloudflareProviderConfig `json:"cloudflare,omitempty"`
+	Job        *JobProviderConfig        `json:"job,omitempty"`
 }
 
 type ProviderSelector struct {

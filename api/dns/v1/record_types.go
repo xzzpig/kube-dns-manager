@@ -35,6 +35,8 @@ type RecordSpec struct {
 // RecordStatus defines the observed state of Record
 type RecordStatus struct {
 	Checked   bool                    `json:"-"`
+	AllReady  bool                    `json:"allReady"`
+	Message   string                  `json:"message,omitempty"`
 	Providers []*RecordProviderStatus `json:"providers,omitempty"`
 }
 
@@ -42,6 +44,7 @@ type RecordProviderStatus struct {
 	NamespacedName `json:",inline"`
 	RecordID       string `json:"recordID"`
 	Message        string `json:"message,omitempty"`
+	Data           string `json:"data,omitempty"`
 	Checked        bool   `json:"-"`
 }
 
@@ -50,6 +53,8 @@ type RecordProviderStatus struct {
 // +kubebuilder:printcolumn:name="Host",type=string,JSONPath=".spec.name"
 // +kubebuilder:printcolumn:name="Type",type=string,JSONPath=".spec.type"
 // +kubebuilder:printcolumn:name="Value",type=string,JSONPath=".spec.value"
+// +kubebuilder:printcolumn:name="Ready",type=boolean,JSONPath=".status.allReady"
+// +kubebuilder:printcolumn:name="Message",type=string,JSONPath=".status.message"
 
 // Record is the Schema for the records API
 type Record struct {

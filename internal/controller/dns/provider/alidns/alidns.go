@@ -59,7 +59,9 @@ func (p *AliyunDNSProvider) find(record *dnsv1.RecordSpec) (string, error) {
 	return *result.Body.DomainRecords.Record[0].RecordId, nil
 }
 
-func (p *AliyunDNSProvider) Create(ctx context.Context, record *dnsv1.RecordSpec) (string, error) {
+func (p *AliyunDNSProvider) Create(ctx context.Context, payload *provider.DnsProviderPayload) (err error) {
+	record := payload.Record
+
 	result, err := p.client.AddDomainRecord(&alidns.AddDomainRecordRequest{
 		DomainName: &p.domainName,
 		RR:         p.getRR(record.Name),
@@ -70,20 +72,24 @@ func (p *AliyunDNSProvider) Create(ctx context.Context, record *dnsv1.RecordSpec
 	})
 	if IsRecordDuplicateError(err) {
 		if id, err := p.find(record); err != nil {
-			return "", err
+			return err
 		} else if id != "" {
-			return id, nil
+			payload.Id = id
+			return nil
 		}
 	}
 	if err != nil {
-		return "", err
+		return err
 	}
-	return *result.Body.RecordId, nil
+	payload.Id = *result.Body.RecordId
+	return nil
 }
 
-func (p *AliyunDNSProvider) Update(ctx context.Context, id string, record *dnsv1.RecordSpec) (newId string, err error) {
+func (p *AliyunDNSProvider) Update(ctx context.Context, payload *provider.DnsProviderPayload) (err error) {
+	record := payload.Record
+
 	result, err := p.client.UpdateDomainRecord(&alidns.UpdateDomainRecordRequest{
-		RecordId: &id,
+		RecordId: &payload.Id,
 		RR:       p.getRR(record.Name),
 		Type:     p.getType(record.Type),
 		Value:    &record.Value,
@@ -91,22 +97,27 @@ func (p *AliyunDNSProvider) Update(ctx context.Context, id string, record *dnsv1
 		Line:     record.ExtraString(ExtraKeyLine),
 	})
 	if IsReccordNotFoundError(err) {
-		return p.Create(ctx, record)
+		return p.Create(ctx, payload)
 	}
 	if IsRecordDuplicateError(err) {
-		return id, nil
+		return nil
 	}
 	if err != nil {
-		return "", err
+		return err
 	}
-	return *result.Body.RecordId, nil
+	payload.Id = *result.Body.RecordId
+	return nil
 }
 
-func (p *AliyunDNSProvider) Delete(ctx context.Context, id string) (err error) {
+func (p *AliyunDNSProvider) Delete(ctx context.Context, payload *provider.DnsProviderPayload) (err error) {
 	_, err = p.client.DeleteDomainRecord(&alidns.DeleteDomainRecordRequest{
-		RecordId: &id,
+		RecordId: &payload.Id,
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	payload.Id = ""
+	return nil
 }
 
 func IsReccordNotFoundError(err error) bool {
@@ -130,7 +141,8 @@ func IsRecordDuplicateError(err error) bool {
 }
 
 func init() {
-	provider.Register(dnsv1.ProviderTypeAliyun, func(ctx context.Context, spec *dnsv1.ProviderSpec) (provider.DNSProvider, error) {
+	provider.Register(dnsv1.ProviderTypeAliyun, func(ctx context.Context, provider dnsv1.ProviderObject) (provider.DNSProvider, error) {
+		spec := provider.GetSpec()
 		p := new(AliyunDNSProvider)
 
 		if spec.Aliyun.DomainName != "" {

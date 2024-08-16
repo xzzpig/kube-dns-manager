@@ -37,7 +37,12 @@ import (
 
 	dnsv1 "github.com/xzzpig/kube-dns-manager/api/dns/v1"
 	dnscontroller "github.com/xzzpig/kube-dns-manager/internal/controller/dns"
+
 	// +kubebuilder:scaffold:imports
+
+	_ "github.com/xzzpig/kube-dns-manager/internal/controller/dns/provider/alidns"
+	_ "github.com/xzzpig/kube-dns-manager/internal/controller/dns/provider/cloudflare"
+	_ "github.com/xzzpig/kube-dns-manager/internal/controller/dns/provider/job"
 )
 
 var (

@@ -24,6 +24,12 @@ spec:
     - jsonPath: .spec.value
       name: Value
       type: string
+    - jsonPath: .status.allReady
+      name: Ready
+      type: boolean
+    - jsonPath: .status.message
+      name: Message
+      type: string
     name: v1
     schema:
       openAPIV3Schema:
@@ -78,9 +84,15 @@ spec:
           status:
             description: RecordStatus defines the observed state of Record
             properties:
+              allReady:
+                type: boolean
+              message:
+                type: string
               providers:
                 items:
                   properties:
+                    data:
+                      type: string
                     message:
                       type: string
                     name:
@@ -94,6 +106,8 @@ spec:
                   - recordID
                   type: object
                 type: array
+            required:
+            - allReady
             type: object
         type: object
     served: true

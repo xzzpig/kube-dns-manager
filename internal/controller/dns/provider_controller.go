@@ -29,9 +29,6 @@ import (
 
 	dnsv1 "github.com/xzzpig/kube-dns-manager/api/dns/v1"
 	"github.com/xzzpig/kube-dns-manager/internal/controller/dns/provider"
-
-	_ "github.com/xzzpig/kube-dns-manager/internal/controller/dns/provider/alidns"
-	_ "github.com/xzzpig/kube-dns-manager/internal/controller/dns/provider/cloudflare"
 )
 
 var providerCache = make(map[types.UID]*provider.CachedDnsProvider)
@@ -89,7 +86,7 @@ func (r *ProviderReconciler[T]) Reconcile(ctx context.Context, req ctrl.Request)
 	}()
 
 	newDnsProvider := func() error {
-		dnsProvider, err := provider.New(ctx, p.GetSpec())
+		dnsProvider, err := provider.New(ctx, p)
 		if err != nil {
 			return err
 		}

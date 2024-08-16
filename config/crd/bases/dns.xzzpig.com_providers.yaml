@@ -87,6 +87,36 @@ spec:
                       name
                     type: string
                 type: object
+              job:
+                properties:
+                  createJobTemplate:
+                    description: GoTemplateString is a string that represents a Go
+                      template
+                    type: string
+                  dataTemplate:
+                    description: GoTemplateString is a string that represents a Go
+                      template
+                    type: string
+                  dataUpdateStrategy:
+                    description: |-
+                      When to write back data to record's data field
+                      OnCreate: When Job is created
+                      OnComplete: After Job is completed
+                      OnCompleteOrFailed: After Job is completed or failed
+                    enum:
+                    - OnCreate
+                    - OnComplete
+                    - OnCompleteOrFailed
+                    type: string
+                  deleteJobTemplate:
+                    description: If empty, createJobTemplate will be used
+                    type: string
+                  updateJobTemplate:
+                    description: If empty, createJobTemplate will be used
+                    type: string
+                required:
+                - createJobTemplate
+                type: object
               selector:
                 properties:
                   domain:
@@ -140,6 +170,7 @@ spec:
                 enum:
                 - ALIYUN
                 - CLOUDFLARE
+                - JOB
                 type: string
             required:
             - type

@@ -36,7 +36,9 @@ func (p *CloudflareProvider) find(ctx context.Context, record *dnsv1.RecordSpec)
 	return records[0].ID, nil
 }
 
-func (p *CloudflareProvider) Create(ctx context.Context, record *dnsv1.RecordSpec) (id string, err error) {
+func (p *CloudflareProvider) Create(ctx context.Context, payload *provider.DnsProviderPayload) (err error) {
+	record := payload.Record
+
 	r, err := p.api.CreateDNSRecord(ctx, cloudflare.ZoneIdentifier(p.zoneID), cloudflare.CreateDNSRecordParams{
 		Name:    record.Name,
 		Type:    string(record.Type),
@@ -47,17 +49,21 @@ func (p *CloudflareProvider) Create(ctx context.Context, record *dnsv1.RecordSpe
 		Tags:    record.ExtraStrings(ExtraKeyTags),
 	})
 	if p.matchExistsRecord && IsRecordDuplicateError(err) {
-		return p.find(ctx, record)
+		payload.Id, err = p.find(ctx, record)
+		return err
 	}
 	if err != nil {
-		return "", err
+		return err
 	}
-	return r.ID, nil
+	payload.Id = r.ID
+	return nil
 }
 
-func (p *CloudflareProvider) Update(ctx context.Context, id string, record *dnsv1.RecordSpec) (newId string, err error) {
+func (p *CloudflareProvider) Update(ctx context.Context, payload *provider.DnsProviderPayload) (err error) {
+	record := payload.Record
+
 	r, err := p.api.UpdateDNSRecord(ctx, cloudflare.ZoneIdentifier(p.zoneID), cloudflare.UpdateDNSRecordParams{
-		ID:      id,
+		ID:      payload.Id,
 		Name:    record.Name,
 		Type:    string(record.Type),
 		Content: record.Value,
@@ -67,16 +73,21 @@ func (p *CloudflareProvider) Update(ctx context.Context, id string, record *dnsv
 		Tags:    record.ExtraStrings(ExtraKeyTags),
 	})
 	if _, ok := err.(*cloudflare.NotFoundError); ok {
-		return p.Create(ctx, record)
+		return p.Create(ctx, payload)
 	}
 	if err != nil {
-		return "", err
+		return err
 	}
-	return r.ID, nil
+	payload.Id = r.ID
+	return nil
 }
 
-func (p *CloudflareProvider) Delete(ctx context.Context, id string) (err error) {
-	return p.api.DeleteDNSRecord(ctx, cloudflare.ZoneIdentifier(p.zoneID), id)
+func (p *CloudflareProvider) Delete(ctx context.Context, payload *provider.DnsProviderPayload) (err error) {
+	err = p.api.DeleteDNSRecord(ctx, cloudflare.ZoneIdentifier(p.zoneID), payload.Id)
+	if err == nil {
+		payload.Id = ""
+	}
+	return err
 }
 
 func IsRecordDuplicateError(err error) bool {
@@ -97,7 +108,8 @@ func IsRecordDuplicateError(err error) bool {
 }
 
 func init() {
-	provider.Register(dnsv1.ProviderTypeCloudflare, func(ctx context.Context, spec *dnsv1.ProviderSpec) (provider.DNSProvider, error) {
+	provider.Register(dnsv1.ProviderTypeCloudflare, func(ctx context.Context, provider dnsv1.ProviderObject) (provider.DNSProvider, error) {
+		spec := provider.GetSpec()
 		p := new(CloudflareProvider)
 		if spec.Cloudflare.APIToken != "" {
 			if api, err := cloudflare.NewWithAPIToken(spec.Cloudflare.APIToken); err != nil {

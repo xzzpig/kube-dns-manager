@@ -45,11 +45,14 @@ func (s *RecordStatus) FindProviderStatus(p NamespacedName) *RecordProviderStatu
 	return nil
 }
 
-func (s *RecordProviderStatus) Success(id string) {
+func (s *RecordProviderStatus) Success(id, data string) {
 	s.RecordID = id
+	s.Data = data
 	s.Message = ""
 }
 
-func (s *RecordProviderStatus) Error(err error) {
+func (s *RecordProviderStatus) Error(id, data string, err error) {
+	s.RecordID = id
+	s.Data = data
 	s.Message = err.Error()
 }
