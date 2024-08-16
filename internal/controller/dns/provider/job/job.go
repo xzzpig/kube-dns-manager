@@ -25,6 +25,8 @@ var (
 	ErrJobRunning      = errors.New("job is running")
 )
 
+const LabelAction = "dns.xzzpig.com/action"
+
 type JobProvider struct {
 	namespace          string
 	createTemplate     *template.Template
@@ -95,6 +97,9 @@ func (p *JobProvider) executeJob(ctx context.Context, tpl *template.Template, pa
 					}
 					payload.Data = buffer.String()
 				}
+				if job.Labels[LabelAction] == "create" {
+					payload.Id = ""
+				}
 				return fmt.Errorf("job failed, %s: %s", job.Status.Conditions[0].Reason, job.Status.Conditions[0].Message)
 			} else {
 				return ErrJobRunning
@@ -117,6 +122,8 @@ func (p *JobProvider) executeJob(ctx context.Context, tpl *template.Template, pa
 	} else if job.Namespace == "" {
 		job.Namespace = os.Getenv("POD_NAMESPACE")
 	}
+
+	job.Labels[LabelAction] = payload.Action
 
 	if p.dataUpdateStrategy == dnsv1.DataUpdateStrategyOnCreate {
 		buffer = new(bytes.Buffer)
