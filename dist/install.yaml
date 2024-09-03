@@ -1769,7 +1769,7 @@ spec:
         - --health-probe-bind-address=:8081
         command:
         - /manager
-        image: ghcr.io/xzzpig/kube-dns-manager:0.1.2
+        image: ghcr.io/xzzpig/kube-dns-manager:0.1.4
         livenessProbe:
           httpGet:
             path: /healthz
