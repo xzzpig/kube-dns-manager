@@ -59,17 +59,13 @@ type ServiceData struct {
 	*corev1.Service
 }
 
-func (s *ServiceData) Endpoints() ([]EndpointsData, error) {
-	endpointsList := &corev1.EndpointsList{}
-	if err := s.client.List(s.ctx, endpointsList, client.InNamespace(s.Namespace), client.MatchingLabels(s.Spec.Selector)); err != nil {
+func (s *ServiceData) Endpoints() (*EndpointsData, error) {
+	endpoints := &corev1.Endpoints{}
+	if err := s.client.Get(s.ctx, client.ObjectKey{Namespace: s.Namespace, Name: s.Name}, endpoints); err != nil {
 		return nil, err
 	}
-	endpoints := make([]EndpointsData, len(endpointsList.Items))
-	for i, ep := range endpointsList.Items {
-		s.watcher.Status.AddResource(dnsv1.WatchResourceKindEndpoints, ep.Namespace, ep.Name)
-		endpoints[i] = EndpointsData{s.TemplateData, &ep}
-	}
-	return endpoints, nil
+	s.watcher.Status.AddResource(dnsv1.WatchResourceKindEndpoints, endpoints.Namespace, endpoints.Name)
+	return &EndpointsData{s.TemplateData, endpoints}, nil
 }
 
 type EndpointsData struct {
@@ -179,6 +175,9 @@ func NewTemplate(name string) *template.Template {
 				return string(bs), nil
 			},
 			"unPtrStr": func(v *string) string {
+				if v == nil {
+					return ""
+				}
 				return *v
 			},
 		})
