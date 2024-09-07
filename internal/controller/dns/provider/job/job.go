@@ -123,6 +123,9 @@ func (p *JobProvider) executeJob(ctx context.Context, tpl *template.Template, pa
 		job.Namespace = os.Getenv("POD_NAMESPACE")
 	}
 
+	if job.Labels == nil {
+		job.Labels = make(map[string]string)
+	}
 	job.Labels[LabelAction] = payload.Action
 
 	if p.dataUpdateStrategy == dnsv1.DataUpdateStrategyOnCreate {

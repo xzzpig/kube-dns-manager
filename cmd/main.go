@@ -40,6 +40,7 @@ import (
 
 	// +kubebuilder:scaffold:imports
 
+	_ "github.com/xzzpig/kube-dns-manager/internal/controller/dns/provider/adguard"
 	_ "github.com/xzzpig/kube-dns-manager/internal/controller/dns/provider/alidns"
 	_ "github.com/xzzpig/kube-dns-manager/internal/controller/dns/provider/cloudflare"
 	_ "github.com/xzzpig/kube-dns-manager/internal/controller/dns/provider/job"

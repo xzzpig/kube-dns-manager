@@ -254,6 +254,12 @@ func (r *ResourceWatcherReconciler) getTemplateData(ctx context.Context, watcher
 			return nil, err
 		}
 		return NewIngressTemplateData(NewTemplateData(ctx, watcher, r.Client), ingress), nil
+	case dnsv1.GeneratorResourceKindRecord:
+		record := &dnsv1.Record{}
+		if err := r.Get(ctx, client.ObjectKey{Namespace: watcher.Spec.Resource.Namespace, Name: watcher.Spec.Resource.Name}, record); err != nil {
+			return nil, err
+		}
+		return NewRecordTemplateData(NewTemplateData(ctx, watcher, r.Client), record), nil
 	default:
 		return nil, ErrorUnknownKind
 	}
@@ -370,5 +376,6 @@ func (r *ResourceWatcherReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(&corev1.Endpoints{}, handler.EnqueueRequestsFromMapFunc(r.watchResources(dnsv1.WatchResourceKindEndpoints))).
 		Watches(&corev1.Node{}, handler.EnqueueRequestsFromMapFunc(r.watchResources(dnsv1.WatchResourceKindNode))).
 		Watches(&corev1.Pod{}, handler.EnqueueRequestsFromMapFunc(r.watchResources(dnsv1.WatchResourceKindPod))).
+		Watches(&dnsv1.Record{}, handler.EnqueueRequestsFromMapFunc(r.watchResources(dnsv1.WatchResourceKindRecord))).
 		Complete(r)
 }

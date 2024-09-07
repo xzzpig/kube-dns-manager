@@ -5,11 +5,12 @@ import "sigs.k8s.io/controller-runtime/pkg/client"
 // GoTemplateString is a string that represents a Go template
 type GoTemplateString string
 
-// +kubebuilder:validation:Enum=Ingress
+// +kubebuilder:validation:Enum=Ingress;Record
 type GeneratorResourceKind string
 
 const (
 	GeneratorResourceKindIngress GeneratorResourceKind = "Ingress"
+	GeneratorResourceKindRecord  GeneratorResourceKind = "Record"
 )
 
 type WatchResourceKind string
@@ -23,6 +24,7 @@ const (
 	WatchResourceKindEndpoints       WatchResourceKind = "Endpoints"
 	WatchResourceKindNode            WatchResourceKind = "Node"
 	WatchResourceKindPod             WatchResourceKind = "Pod"
+	WatchResourceKindRecord          WatchResourceKind = "Record"
 )
 
 // +kubebuilder:validation:Enum=A;CNAME;TXT;MX;SRV;AAAA;NS;CAA

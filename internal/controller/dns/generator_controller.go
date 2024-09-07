@@ -164,6 +164,12 @@ func (r *GeneratorReconciler[T]) getResource(ctx context.Context, kind dnsv1.Gen
 			return nil, err
 		}
 		return ingress, nil
+	case dnsv1.GeneratorResourceKindRecord:
+		record := &dnsv1.Record{}
+		if err := r.Get(ctx, client.ObjectKey{Namespace: resource.Namespace, Name: resource.Name}, record); err != nil {
+			return nil, err
+		}
+		return record, nil
 	default:
 		return nil, ErrorUnknownKind
 	}
@@ -179,6 +185,18 @@ func (r *GeneratorReconciler[T]) listResources(ctx context.Context, generator dn
 	switch spec.ResourceKind {
 	case dnsv1.GeneratorResourceKindIngress:
 		list := &netv1.IngressList{}
+		if err = r.List(ctx, list, &client.ListOptions{
+			Namespace:     generator.GetNamespace(),
+			LabelSelector: selector,
+		}); err != nil {
+			return nil, err
+		}
+		objs = make([]client.Object, len(list.Items))
+		for i := range list.Items {
+			objs[i] = &list.Items[i]
+		}
+	case dnsv1.GeneratorResourceKindRecord:
+		list := &dnsv1.RecordList{}
 		if err = r.List(ctx, list, &client.ListOptions{
 			Namespace:     generator.GetNamespace(),
 			LabelSelector: selector,
@@ -265,6 +283,12 @@ func (r *GeneratorReconciler[T]) SetupWithManager(mgr ctrl.Manager) error {
 		For(r.newer.New()).
 		Watches(&netv1.Ingress{},
 			handler.EnqueueRequestsFromMapFunc(r.watchResources(dnsv1.GeneratorResourceKindIngress)),
+			builder.WithPredicates(predicate.Or(
+				predicate.LabelChangedPredicate{},
+				predicate.Funcs{DeleteFunc: func(e event.DeleteEvent) bool { return true }},
+			))).
+		Watches(&dnsv1.Record{},
+			handler.EnqueueRequestsFromMapFunc(r.watchResources(dnsv1.GeneratorResourceKindRecord)),
 			builder.WithPredicates(predicate.Or(
 				predicate.LabelChangedPredicate{},
 				predicate.Funcs{DeleteFunc: func(e event.DeleteEvent) bool { return true }},

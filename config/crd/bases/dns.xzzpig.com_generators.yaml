@@ -46,6 +46,7 @@ spec:
               resourceKind:
                 enum:
                 - Ingress
+                - Record
                 type: string
               selector:
                 description: |-

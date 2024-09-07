@@ -53,6 +53,17 @@ spec:
           spec:
             description: ProviderSpec defines the desired state of Provider
             properties:
+              adguard:
+                properties:
+                  password:
+                    type: string
+                  url:
+                    type: string
+                  username:
+                    type: string
+                required:
+                - url
+                type: object
               aliyun:
                 properties:
                   accessKeyId:
@@ -171,6 +182,7 @@ spec:
                 - ALIYUN
                 - CLOUDFLARE
                 - JOB
+                - ADGUARD
                 type: string
             required:
             - type

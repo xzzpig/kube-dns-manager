@@ -84,10 +84,23 @@ func (p *CloudflareProvider) Update(ctx context.Context, payload *provider.DnsPr
 
 func (p *CloudflareProvider) Delete(ctx context.Context, payload *provider.DnsProviderPayload) (err error) {
 	err = p.api.DeleteDNSRecord(ctx, cloudflare.ZoneIdentifier(p.zoneID), payload.Id)
+	if IsRecordNotFoundError(err) {
+		err = nil
+	}
 	if err == nil {
 		payload.Id = ""
 	}
 	return err
+}
+
+func IsRecordNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if _, ok := err.(*cloudflare.NotFoundError); ok {
+		return true
+	}
+	return false
 }
 
 func IsRecordDuplicateError(err error) bool {

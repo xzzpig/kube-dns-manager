@@ -153,10 +153,27 @@ func NewTemplateData(ctx context.Context, watcher *dnsv1.ResourceWatcher, client
 	}
 }
 
+type RecordTemplateData struct {
+	TemplateData `json:",inline"`
+	record       *dnsv1.Record
+}
+
+func (d *RecordTemplateData) Record() *dnsv1.Record {
+	d.watcher.Status.AddResource(dnsv1.WatchResourceKindRecord, d.record.Namespace, d.record.Name)
+	return d.record
+}
+
 func NewIngressTemplateData(data TemplateData, ingress *netv1.Ingress) *IngressTemplateData {
 	return &IngressTemplateData{
 		TemplateData: data,
 		ingress:      ingress,
+	}
+}
+
+func NewRecordTemplateData(data TemplateData, record *dnsv1.Record) *RecordTemplateData {
+	return &RecordTemplateData{
+		TemplateData: data,
+		record:       record,
 	}
 }
 

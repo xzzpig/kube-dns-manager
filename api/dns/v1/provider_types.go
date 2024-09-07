@@ -24,13 +24,14 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// +kubebuilder:validation:Enum=ALIYUN;CLOUDFLARE;JOB
+// +kubebuilder:validation:Enum=ALIYUN;CLOUDFLARE;JOB;ADGUARD
 type ProviderType string
 
 const (
 	ProviderTypeAliyun     ProviderType = "ALIYUN"
 	ProviderTypeCloudflare ProviderType = "CLOUDFLARE"
 	ProviderTypeJob        ProviderType = "JOB"
+	ProviderTypeAdguard    ProviderType = "ADGUARD"
 )
 
 // When to write back data to record's data field
@@ -76,6 +77,12 @@ type JobProviderConfig struct {
 	DataUpdateStrategy DataUpdateStrategy `json:"dataUpdateStrategy,omitempty"`
 }
 
+type AdguardProviderConfig struct {
+	URL      string `json:"url"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+}
+
 // ProviderSpec defines the desired state of Provider
 type ProviderSpec struct {
 	Type       ProviderType              `json:"type"`
@@ -83,6 +90,7 @@ type ProviderSpec struct {
 	Aliyun     *AliyunProviderConfig     `json:"aliyun,omitempty"`
 	Cloudflare *CloudflareProviderConfig `json:"cloudflare,omitempty"`
 	Job        *JobProviderConfig        `json:"job,omitempty"`
+	Adguard    *AdguardProviderConfig    `json:"adguard,omitempty"`
 }
 
 type ProviderSelector struct {

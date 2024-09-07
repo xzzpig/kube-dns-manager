@@ -54,6 +54,7 @@ spec:
               resourceKind:
                 enum:
                 - Ingress
+                - Record
                 type: string
               selector:
                 description: |-
@@ -193,6 +194,17 @@ spec:
           spec:
             description: ProviderSpec defines the desired state of Provider
             properties:
+              adguard:
+                properties:
+                  password:
+                    type: string
+                  url:
+                    type: string
+                  username:
+                    type: string
+                required:
+                - url
+                type: object
               aliyun:
                 properties:
                   accessKeyId:
@@ -311,6 +323,7 @@ spec:
                 - ALIYUN
                 - CLOUDFLARE
                 - JOB
+                - ADGUARD
                 type: string
             required:
             - type
@@ -433,6 +446,7 @@ spec:
               resourceKind:
                 enum:
                 - Ingress
+                - Record
                 type: string
               selector:
                 description: |-
@@ -572,6 +586,17 @@ spec:
           spec:
             description: ProviderSpec defines the desired state of Provider
             properties:
+              adguard:
+                properties:
+                  password:
+                    type: string
+                  url:
+                    type: string
+                  username:
+                    type: string
+                required:
+                - url
+                type: object
               aliyun:
                 properties:
                   accessKeyId:
@@ -690,6 +715,7 @@ spec:
                 - ALIYUN
                 - CLOUDFLARE
                 - JOB
+                - ADGUARD
                 type: string
             required:
             - type
@@ -1769,7 +1795,7 @@ spec:
         - --health-probe-bind-address=:8081
         command:
         - /manager
-        image: ghcr.io/xzzpig/kube-dns-manager:0.1.4
+        image: ghcr.io/xzzpig/kube-dns-manager:0.1.5
         livenessProbe:
           httpGet:
             path: /healthz
