@@ -222,7 +222,7 @@ func (r *GeneratorReconciler[T]) watchResources(resourceType dnsv1.GeneratorReso
 			changed := false
 			if ok, err := generator.GetSpec().Matches(obj); err != nil {
 				logger.Error(err, "Failed to match generator", "generator", generator.GetName())
-			} else if ok {
+			} else if ok && obj.GetDeletionTimestamp() == nil {
 				changed = generator.GetStatus().AddResource(dnsv1.NamespacedName{
 					Name:      obj.GetName(),
 					Namespace: obj.GetNamespace(),
