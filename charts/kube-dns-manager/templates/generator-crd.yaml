@@ -48,6 +48,7 @@ spec:
                 enum:
                 - Ingress
                 - Record
+                - Node
                 type: string
               selector:
                 description: |-

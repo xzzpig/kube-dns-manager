@@ -18,6 +18,7 @@ package dns
 
 import (
 	"context"
+	"os"
 
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	dnsv1 "github.com/xzzpig/kube-dns-manager/api/dns/v1"
+	corev1 "k8s.io/api/core/v1"
 	netv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -115,6 +117,9 @@ func (r *GeneratorReconciler[T]) Reconcile(ctx context.Context, req ctrl.Request
 				watcher.GenerateName = generator.GetSpec().WatcherGenerateName
 			}
 			watcher.Namespace = resource.Namespace
+			if watcher.Namespace == "" {
+				watcher.Namespace = os.Getenv("POD_NAMESPACE")
+			}
 			if err := ctrl.SetControllerReference(generator, watcher, r.Scheme); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -170,6 +175,12 @@ func (r *GeneratorReconciler[T]) getResource(ctx context.Context, kind dnsv1.Gen
 			return nil, err
 		}
 		return record, nil
+	case dnsv1.GeneratorResourceKindNode:
+		node := &corev1.Node{}
+		if err := r.Get(ctx, client.ObjectKey{Name: resource.Name}, node); err != nil {
+			return nil, err
+		}
+		return node, nil
 	default:
 		return nil, ErrorUnknownKind
 	}
@@ -199,6 +210,17 @@ func (r *GeneratorReconciler[T]) listResources(ctx context.Context, generator dn
 		list := &dnsv1.RecordList{}
 		if err = r.List(ctx, list, &client.ListOptions{
 			Namespace:     generator.GetNamespace(),
+			LabelSelector: selector,
+		}); err != nil {
+			return nil, err
+		}
+		objs = make([]client.Object, len(list.Items))
+		for i := range list.Items {
+			objs[i] = &list.Items[i]
+		}
+	case dnsv1.GeneratorResourceKindNode:
+		list := &corev1.NodeList{}
+		if err = r.List(ctx, list, &client.ListOptions{
 			LabelSelector: selector,
 		}); err != nil {
 			return nil, err
@@ -279,7 +301,7 @@ func (r *GeneratorReconciler[T]) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	b := ctrl.NewControllerManagedBy(mgr).
 		For(r.newer.New()).
 		Watches(&netv1.Ingress{},
 			handler.EnqueueRequestsFromMapFunc(r.watchResources(dnsv1.GeneratorResourceKindIngress)),
@@ -292,6 +314,17 @@ func (r *GeneratorReconciler[T]) SetupWithManager(mgr ctrl.Manager) error {
 			builder.WithPredicates(predicate.Or(
 				predicate.LabelChangedPredicate{},
 				predicate.Funcs{DeleteFunc: func(e event.DeleteEvent) bool { return true }},
-			))).
-		Complete(r)
+			)))
+
+	switch r.newer.New().(type) {
+	case *dnsv1.ClusterGenerator:
+		b = b.Watches(&corev1.Node{},
+			handler.EnqueueRequestsFromMapFunc(r.watchResources(dnsv1.GeneratorResourceKindNode)),
+			builder.WithPredicates(predicate.Or(
+				predicate.LabelChangedPredicate{},
+				predicate.Funcs{DeleteFunc: func(e event.DeleteEvent) bool { return true }},
+			)))
+	}
+
+	return b.Complete(r)
 }

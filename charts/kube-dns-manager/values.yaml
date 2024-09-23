@@ -11,7 +11,7 @@ controllerManager:
         - ALL
     image:
       repository: ghcr.io/xzzpig/kube-dns-manager
-      tag: 0.1.5
+      tag: 0.1.6
     resources:
       limits:
         cpu: 500m

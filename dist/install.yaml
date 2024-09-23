@@ -55,6 +55,7 @@ spec:
                 enum:
                 - Ingress
                 - Record
+                - Node
                 type: string
               selector:
                 description: |-
@@ -447,6 +448,7 @@ spec:
                 enum:
                 - Ingress
                 - Record
+                - Node
                 type: string
               selector:
                 description: |-
@@ -1795,7 +1797,7 @@ spec:
         - --health-probe-bind-address=:8081
         command:
         - /manager
-        image: ghcr.io/xzzpig/kube-dns-manager:0.1.5
+        image: ghcr.io/xzzpig/kube-dns-manager:0.1.6
         livenessProbe:
           httpGet:
             path: /healthz

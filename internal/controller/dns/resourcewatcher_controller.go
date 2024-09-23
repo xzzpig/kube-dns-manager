@@ -260,6 +260,12 @@ func (r *ResourceWatcherReconciler) getTemplateData(ctx context.Context, watcher
 			return nil, err
 		}
 		return NewRecordTemplateData(NewTemplateData(ctx, watcher, r.Client), record), nil
+	case dnsv1.GeneratorResourceKindNode:
+		node := &corev1.Node{}
+		if err := r.Get(ctx, client.ObjectKey{Name: watcher.Spec.Resource.Name}, node); err != nil {
+			return nil, err
+		}
+		return NewNodeTemplateData(NewTemplateData(ctx, watcher, r.Client), node), nil
 	default:
 		return nil, ErrorUnknownKind
 	}

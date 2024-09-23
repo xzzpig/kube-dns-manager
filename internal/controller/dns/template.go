@@ -73,7 +73,7 @@ type EndpointsData struct {
 	*corev1.Endpoints
 }
 
-func (e *EndpointsData) Nodes() ([]*corev1.Node, error) {
+func (e *EndpointsData) Nodes() ([]NodeData, error) {
 	nodeMap := make(map[string]*corev1.Node)
 	for _, subset := range e.Subsets {
 		for _, address := range subset.Addresses {
@@ -89,10 +89,10 @@ func (e *EndpointsData) Nodes() ([]*corev1.Node, error) {
 			}
 		}
 	}
-	nodes := make([]*corev1.Node, len(nodeMap))
+	nodes := make([]NodeData, len(nodeMap))
 	i := 0
 	for _, node := range nodeMap {
-		nodes[i] = node
+		nodes[i] = NodeData{e.TemplateData, node}
 		e.watcher.Status.AddResource(dnsv1.WatchResourceKindNode, node.Namespace, node.Name)
 		i++
 	}
@@ -133,7 +133,7 @@ type PodData struct {
 	*corev1.Pod
 }
 
-func (p *PodData) Node() (*corev1.Node, error) {
+func (p *PodData) Node() (*NodeData, error) {
 	if p.Spec.NodeName == "" {
 		return nil, nil
 	}
@@ -142,7 +142,21 @@ func (p *PodData) Node() (*corev1.Node, error) {
 		return nil, err
 	}
 	p.watcher.Status.AddResource(dnsv1.WatchResourceKindNode, node.Namespace, node.Name)
-	return node, nil
+	return &NodeData{p.TemplateData, node}, nil
+}
+
+type NodeData struct {
+	TemplateData
+	*corev1.Node
+}
+
+func (n *NodeData) Ready() bool {
+	for _, condition := range n.Status.Conditions {
+		if condition.Type == corev1.NodeReady && condition.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
 }
 
 func NewTemplateData(ctx context.Context, watcher *dnsv1.ResourceWatcher, client client.Client) TemplateData {
@@ -174,6 +188,13 @@ func NewRecordTemplateData(data TemplateData, record *dnsv1.Record) *RecordTempl
 	return &RecordTemplateData{
 		TemplateData: data,
 		record:       record,
+	}
+}
+
+func NewNodeTemplateData(data TemplateData, node *corev1.Node) *NodeData {
+	return &NodeData{
+		TemplateData: data,
+		Node:         node,
 	}
 }
 
