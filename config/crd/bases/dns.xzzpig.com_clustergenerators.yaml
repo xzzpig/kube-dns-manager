@@ -48,6 +48,7 @@ spec:
                 - Ingress
                 - Record
                 - Node
+                - Service
                 type: string
               selector:
                 description: |-

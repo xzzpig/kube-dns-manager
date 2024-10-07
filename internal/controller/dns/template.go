@@ -198,6 +198,13 @@ func NewNodeTemplateData(data TemplateData, node *corev1.Node) *NodeData {
 	}
 }
 
+func NewServiceTemplateData(data TemplateData, service *corev1.Service) *ServiceData {
+	return &ServiceData{
+		TemplateData: data,
+		Service:      service,
+	}
+}
+
 func NewTemplate(name string) *template.Template {
 	return template.New(name).
 		Funcs(sprig.FuncMap()).

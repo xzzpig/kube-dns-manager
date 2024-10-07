@@ -181,6 +181,12 @@ func (r *GeneratorReconciler[T]) getResource(ctx context.Context, kind dnsv1.Gen
 			return nil, err
 		}
 		return node, nil
+	case dnsv1.GeneratorResourceKindService:
+		service := &corev1.Service{}
+		if err := r.Get(ctx, client.ObjectKey{Namespace: resource.Namespace, Name: resource.Name}, service); err != nil {
+			return nil, err
+		}
+		return service, nil
 	default:
 		return nil, ErrorUnknownKind
 	}
@@ -221,6 +227,18 @@ func (r *GeneratorReconciler[T]) listResources(ctx context.Context, generator dn
 	case dnsv1.GeneratorResourceKindNode:
 		list := &corev1.NodeList{}
 		if err = r.List(ctx, list, &client.ListOptions{
+			LabelSelector: selector,
+		}); err != nil {
+			return nil, err
+		}
+		objs = make([]client.Object, len(list.Items))
+		for i := range list.Items {
+			objs[i] = &list.Items[i]
+		}
+	case dnsv1.GeneratorResourceKindService:
+		list := &corev1.ServiceList{}
+		if err = r.List(ctx, list, &client.ListOptions{
+			Namespace:     generator.GetNamespace(),
 			LabelSelector: selector,
 		}); err != nil {
 			return nil, err
@@ -311,6 +329,12 @@ func (r *GeneratorReconciler[T]) SetupWithManager(mgr ctrl.Manager) error {
 			))).
 		Watches(&dnsv1.Record{},
 			handler.EnqueueRequestsFromMapFunc(r.watchResources(dnsv1.GeneratorResourceKindRecord)),
+			builder.WithPredicates(predicate.Or(
+				predicate.LabelChangedPredicate{},
+				predicate.Funcs{DeleteFunc: func(e event.DeleteEvent) bool { return true }},
+			))).
+		Watches(&corev1.Service{},
+			handler.EnqueueRequestsFromMapFunc(r.watchResources(dnsv1.GeneratorResourceKindService)),
 			builder.WithPredicates(predicate.Or(
 				predicate.LabelChangedPredicate{},
 				predicate.Funcs{DeleteFunc: func(e event.DeleteEvent) bool { return true }},
